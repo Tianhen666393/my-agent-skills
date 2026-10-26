@@ -43,11 +43,12 @@ python scripts/app_ledger.py upsert --device 天选5pro --request work/app_entry
 {
   "entries": [
     {
-      "name": "Altium Designer 24",
-      "purpose": "EDA电路与PCB设计",
-      "version": "24.0.1",
-      "path": "T:\\Electronic\\AD24",
-      "notes": "已配置本地元件库；免安装版"
+      "name": "Altium Designer",
+      "category": "专业EDA与电路设计",
+      "purpose": "EDA电路原理图与PCB设计",
+      "version": "26.0.0.14",
+      "path": "T:\\Electronic\\AD2026\\X2.EXE",
+      "notes": "已配置本地元件库；工程库位于 T:\\Electronic\\AD_lib"
     }
   ]
 }

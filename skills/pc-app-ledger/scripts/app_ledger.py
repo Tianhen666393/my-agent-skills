@@ -73,14 +73,26 @@ def load_records(excel_path):
             seq = int(idx)
         except ValueError:
             continue
-        records.append({
-            'seq': seq,
-            'name': str(row[1] or '').strip(),
-            'purpose': str(row[2] or '').strip(),
-            'version': str(row[3] or '').strip(),
-            'path': str(row[4] or '').strip(),
-            'notes': str(row[5] or '').strip()
-        })
+        if len(row) >= 7:
+            records.append({
+                'seq': seq,
+                'name': str(row[1] or '').strip(),
+                'category': str(row[2] or '').strip(),
+                'purpose': str(row[3] or '').strip(),
+                'version': str(row[4] or '').strip(),
+                'path': str(row[5] or '').strip(),
+                'notes': str(row[6] or '').strip()
+            })
+        else:
+            records.append({
+                'seq': seq,
+                'name': str(row[1] or '').strip(),
+                'category': '常用应用与工具',
+                'purpose': str(row[2] or '').strip(),
+                'version': str(row[3] or '').strip(),
+                'path': str(row[4] or '').strip(),
+                'notes': str(row[5] or '').strip()
+            })
     return records
 
 def save_records(excel_path, device, records):
@@ -90,10 +102,10 @@ def save_records(excel_path, device, records):
     ws.views.sheetView[0].showGridLines = True
     
     today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-    headers = ['序号', '软件名称', '分类与用途', '版本', '安装绝对路径', '备注']
+    headers = ['序号', '软件名称', '类别', '主要用途', '版本', '安装绝对路径', '备注']
     
     # Title
-    ws.merge_cells('A1:F1')
+    ws.merge_cells('A1:G1')
     c_title = ws['A1']
     c_title.value = f'{device} 本机应用安装清单'
     c_title.font = Font(name='Microsoft YaHei', size=16, bold=True, color='17365D')
@@ -101,7 +113,7 @@ def save_records(excel_path, device, records):
     ws.row_dimensions[1].height = 32
     
     # Subtitle
-    ws.merge_cells('A2:F2')
+    ws.merge_cells('A2:G2')
     c_sub = ws['A2']
     c_sub.value = f'设备：{device} ｜ 截至 {today_str} ｜ 共 {len(records)} 项 ｜ 统一维护个人应用安装路径与备忘'
     c_sub.font = Font(name='Microsoft YaHei', size=10, color='595959')
@@ -134,23 +146,24 @@ def save_records(excel_path, device, records):
         r['seq'] = row_idx - 3
         # Clean control characters that break openpyxl XML export
         clean_name = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['name'] or ''))
+        clean_cat = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r.get('category', '常用应用与工具') or ''))
         clean_purpose = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['purpose'] or ''))
         clean_version = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['version'] or ''))
         clean_path = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['path'] or ''))
         clean_notes = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['notes'] or ''))
-        row_vals = [r['seq'], clean_name, clean_purpose, clean_version, clean_path, clean_notes]
+        row_vals = [r['seq'], clean_name, clean_cat, clean_purpose, clean_version, clean_path, clean_notes]
         for col_idx, val in enumerate(row_vals, 1):
             c = ws.cell(row=row_idx, column=col_idx, value=val)
             c.font = data_font
             c.border = thin_border
-            c.alignment = align_center if col_idx in [1, 4] else align_left
+            c.alignment = align_center if col_idx in [1, 3, 5] else align_left
             
-    widths = [10, 24, 28, 16, 68, 38]
+    widths = [8, 24, 22, 28, 14, 65, 36]
     for col_idx, w in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(col_idx)].width = w
         
     ws.freeze_panes = 'A4'
-    ws.auto_filter.ref = f'A3:F{max(4, len(records)+3)}'
+    ws.auto_filter.ref = f'A3:G{max(4, len(records)+3)}'
     
     os.makedirs(os.path.dirname(excel_path), exist_ok=True)
     wb.save(excel_path)
@@ -204,9 +217,16 @@ def main():
             if not name:
                 continue
             idx = next((i for i, r in enumerate(records) if r['name'].lower() == name.lower()), -1)
+            cat = entry.get('category', '').strip()
+            if not cat and idx >= 0:
+                cat = records[idx].get('category', '常用应用与工具')
+            elif not cat:
+                cat = '常用应用与工具'
+
             item = {
                 'name': name,
-                'purpose': entry.get('purpose', entry.get('category', '')).strip(),
+                'category': cat,
+                'purpose': entry.get('purpose', '').strip(),
                 'version': entry.get('version', '未提供').strip(),
                 'path': entry.get('path', '').strip(),
                 'notes': entry.get('notes', '').strip()
