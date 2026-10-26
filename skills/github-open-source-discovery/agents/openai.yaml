@@ -1,0 +1,3 @@
+interface:
+  display_name: "GitHub Open Source Discovery"
+  short_description: "GitHub 开源项目寻宝：检索、核验、增量收录与复核"
