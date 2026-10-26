@@ -132,7 +132,13 @@ def save_records(excel_path, device, records):
     for row_idx, r in enumerate(records, 4):
         ws.row_dimensions[row_idx].height = 42
         r['seq'] = row_idx - 3
-        row_vals = [r['seq'], r['name'], r['purpose'], r['version'], r['path'], r['notes']]
+        # Clean control characters that break openpyxl XML export
+        clean_name = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['name'] or ''))
+        clean_purpose = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['purpose'] or ''))
+        clean_version = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['version'] or ''))
+        clean_path = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['path'] or ''))
+        clean_notes = openpyxl.cell.cell.ILLEGAL_CHARACTERS_RE.sub('', str(r['notes'] or ''))
+        row_vals = [r['seq'], clean_name, clean_purpose, clean_version, clean_path, clean_notes]
         for col_idx, val in enumerate(row_vals, 1):
             c = ws.cell(row=row_idx, column=col_idx, value=val)
             c.font = data_font
