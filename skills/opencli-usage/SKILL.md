@@ -6,6 +6,10 @@ allowed-tools: Bash(opencli:*), Read
 
 # opencli-usage
 
+> [!NOTE]
+> **上游出处 (Upstream Source)**：本技能源自开源项目 [`jackwener/OpenCLI`](https://github.com/jackwener/OpenCLI)（作者：Jack Wener）。
+> **本地维护说明**：OpenCLI 工具总入口与适配器总览。官方最新文档及更新请访问原仓库。
+
 OpenCLI turns websites and Electron desktop apps into a uniform `opencli <site> <command>` surface that agents can drive without screen-scraping. This skill is the orientation layer — once you know what you want to do, load one of the specialized skills below.
 
 ## Main capabilities

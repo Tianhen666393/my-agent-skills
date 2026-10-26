@@ -6,6 +6,10 @@ allowed-tools: Bash(opencli:*), Read, Edit, Write
 
 # opencli-browser
 
+> [!NOTE]
+> **上游出处 (Upstream Source)**：本技能源自开源项目 [`jackwener/OpenCLI`](https://github.com/jackwener/OpenCLI)（作者：Jack Wener）。
+> **本地维护说明**：用于配合本机 OpenCLI 工具执行 Chrome 实机/无头自动化交互。官方最新动态与适配器更新请访问原仓库。
+
 The first reader of this CLI is an agent, not a human. Every subcommand returns a structured envelope that tells you exactly what matched, how confident the match is, and what to do if it didn't. Lean on those envelopes — do not guess.
 
 This skill is for **driving a live browser** to accomplish an agent task. If you are building a reusable adapter under `~/.opencli/clis/<site>/` use `opencli-adapter-author` instead.

@@ -4,25 +4,36 @@
 
 ## 技能列表 (Skills)
 
+### 一、 个人自研与深度定制技能 (Personal & Customized)
+
 | 技能名称 | 目录 | 简要说明 |
 | :--- | :--- | :--- |
-| **article-to-pdf** | [`skills/article-to-pdf`](skills/article-to-pdf) | 将网页教程文章（微信公众号、CSDN 等）转为含原文排版、高清截图和页码的离线 A4 PDF，支持去广告、步骤防跨页断裂及索引自动维护。 |
-| **ai-tool-ledger** | [`skills/ai-tool-ledger`](skills/ai-tool-ledger) | 维护跨 Agent 共用的 AI 工具安装台账（Excel），支持组件安装自检与核实、集中备份（`.agent_backups`）与过期自动归档（`.agent_trash`）。 |
 | **file-backup-cleanup** | [`skills/file-backup-cleanup`](skills/file-backup-cleanup) | 本机全局文件安全删除（同盘日期回收站 `.agent_trash`）、操作分级授权（A/B/C 级）与工作备份集中管理（`.agent_backups` 及中文备份说明）核心安全规范。 |
+| **article-to-pdf** | [`skills/article-to-pdf`](skills/article-to-pdf) | 将网页教程文章（微信公众号、CSDN 等）转为含原文排版、高清截图和页码的离线 A4 PDF，支持去广告、步聚防跨页断裂及索引自动维护。 |
+| **ai-tool-ledger** | [`skills/ai-tool-ledger`](skills/ai-tool-ledger) | 维护跨 Agent 共用的 AI 工具安装台账（Excel），支持组件安装自检与核实、集中备份（`.agent_backups`）与过期自动归档（`.agent_trash`）。 |
 | **baidu-netdisk-organize** | [`skills/baidu-netdisk-organize`](skills/baidu-netdisk-organize) | 百度网盘自动化分类整理：按文档/音频/截图/拍照/视频等固定桶分流、本地 OCR 与 CLIP 隐私隔离、待确认清单生成与服务端安全移动。 |
 | **github-open-source-discovery** | [`skills/github-open-source-discovery`](skills/github-open-source-discovery) | 按触发词持续检索、核验并增量收录 GitHub 开源项目，包含“检索与推荐底线”、电赛与电子信息专项跟踪及到期项目定期复核机制。 |
 | **find-skills** | [`skills/find-skills`](skills/find-skills) | 查找、核实、介绍和比较开源 Agent Skills 生态技能，遵循 skills.sh 详情核验、防幻觉与核查日期规则，支持多 Agent 工具与 Git 分发。 |
 | **markdown-technical-writing** | [`skills/markdown-technical-writing`](skills/markdown-technical-writing) | Markdown 技术文档规范：规范数值、物理量与常用单位书写，约束 LaTeX 公式排版与显示数学语法，确保 MathJax/KaTeX 跨平台渲染兼容。 |
 | **adversarial-doc-reviewer** | [`skills/adversarial-doc-reviewer`](skills/adversarial-doc-reviewer) | 学术论文与敏感方案红军对抗评审：模拟苛刻审稿人或对立视角挖掘逻辑漏洞与事实防御薄弱点，并在严格保全实验数据与事实前提下进行抗辩强化改写。 |
-| **brainstorming** | [`skills/brainstorming`](skills/brainstorming) | 协作式头脑风暴与架构设计：探索意图与约束、设计门禁把控（Spike / Bounded / Architectural 三路径）、产出规范设计文档并支持浏览器可视化辅助。 |
-| **opencli-browser** | [`skills/opencli-browser`](skills/opencli-browser) | 驱动真实 Chrome 窗口执行网页交互：提供选择器优先目标契约、复合表单控件识别、DOM 指纹防漂移、网络请求捕获与可机读结构化信封。 |
-| **opencli-usage** | [`skills/opencli-usage`](skills/opencli-usage) | OpenCLI 工具体系总入口与使用指南：提供全平台适配器发现、无头/有头浏览器桥接诊断、多格式输出与桌面应用 CDP 驱动规范。 |
+
+---
+
+### 二、 社区开源精选与本地适配技能 (Curated & Patched Upstream)
+
+以下技能衍生自开源社区优秀项目，日常由天痕根据个人多 Agent 规范进行本地路径修正与环境适配。出处及官方最新动态请见上游原仓库：
+
+| 技能名称 | 目录 | 上游开源项目 (Upstream) | 简要说明与本地维护说明 |
+| :--- | :--- | :--- | :--- |
+| **brainstorming** | [`skills/brainstorming`](skills/brainstorming) | [`obra/superpowers`](https://github.com/obra/superpowers)<br>*(by @obra)* | 协作式头脑风暴与架构设计：探索意图与约束、设计门禁把控、产出规范设计文档。本地版本修复了 `docs/specs/` 路径硬编码与断链依赖。 |
+| **opencli-browser** | [`skills/opencli-browser`](skills/opencli-browser) | [`jackwener/OpenCLI`](https://github.com/jackwener/OpenCLI)<br>*(by Jack Wener)* | 驱动真实 Chrome 窗口执行网页交互：提供选择器优先目标契约、复合表单控件识别、DOM 指纹防漂移、网络请求捕获与可机读结构化信封。 |
+| **opencli-usage** | [`skills/opencli-usage`](skills/opencli-usage) | [`jackwener/OpenCLI`](https://github.com/jackwener/OpenCLI)<br>*(by Jack Wener)* | OpenCLI 工具体系总入口与使用指南：提供全平台适配器发现、无头/有头浏览器桥接诊断、多格式输出与桌面应用 CDP 驱动规范。 |
 
 ---
 
 ## 目录结构规范
 
-本仓库遵循标准 Agent Skill 仓库结构，支持通过 CC Switch 仓库源一键添加与同步：
+本仓库遵循标准 Agent Skill 仓库结构，支持通过各类技能管理工具（如 CC Switch、Magpie 等）或 Git 机制在各应用间无缝同步：
 
 ```text
 my-agent-skills/
@@ -36,9 +47,9 @@ my-agent-skills/
         └── scripts/                  # 辅助执行脚本与工具
 ```
 
-## 在 CC Switch 中使用
+## 在技能管理工具（如 CC Switch）中使用
 
-1. 打开 CC Switch 客户端，进入 **技能 (Skills)** 页面。
-2. 在 **技能源 (Skill Repos)** 中添加本仓库：`Tianhen666393/my-agent-skills`（分支：`main`）。
-3. 发现并安装技能后，一键分发至所需的 Agent（Codex、Antigravity、Claude 等）。
-4. 后续更新技能后，在 CC Switch 点击 **“检测更新”** 即可全量同步。
+1. 打开管理工具，进入 **技能 (Skills) ➔ 技能仓库管理**；
+2. 添加本仓库：`Tianhen666393/my-agent-skills`（分支：`main`）；
+3. 一键分发至所需的 Agent（Codex、Antigravity、Claude 等）；
+4. 本地仓库执行 `git push` 更新后，在客户端点击 **“检测更新”** 即可一键全平台同步生效。

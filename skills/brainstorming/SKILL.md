@@ -5,6 +5,10 @@ description: "You MUST use this before any creative work - creating features, bu
 
 # Brainstorming Ideas Into Designs
 
+> [!NOTE]
+> **上游出处 (Upstream Source)**：本技能衍生自著名开源项目 [`obra/superpowers`](https://github.com/obra/superpowers)（作者：Jesse Vincent / @obra）。
+> **本地维护说明**：针对个人多 Agent 环境修复了 `docs/specs/` 路径硬编码与断链依赖。若需查阅原作者最新特性与原版规范，请访问原仓库。
+
 Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
 
 Start by classifying how much process the request needs, then work
