@@ -7,6 +7,7 @@
 | 技能名称 | 目录 | 简要说明 |
 | :--- | :--- | :--- |
 | **article-to-pdf** | [`skills/article-to-pdf`](skills/article-to-pdf) | 将网页教程文章（微信公众号、CSDN 等）转为含原文排版、高清截图和页码的离线 A4 PDF，支持去广告、步聚防跨页断裂及索引自动维护。 |
+| **ai-tool-ledger** | [`skills/ai-tool-ledger`](skills/ai-tool-ledger) | 维护跨 Agent 共用的 AI 工具安装台账（Excel），支持组件安装自检与核实、集中备份（.agent_backups）与过期自动归档（.agent_trash）。 |
 
 ---
 

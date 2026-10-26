@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI 工具台账"
+  short_description: "自检当前应用的技能和插件，核实绝对路径、登记用途并统一维护安装台账"
+  default_prompt: "使用 $ai-tool-ledger 自检当前应用的组件，核实路径并更新 AI 工具安装台账。"
