@@ -1,6 +1,6 @@
 ---
 name: ai-tool-ledger
-description: 维护跨 Agent 共用的 AI 工具安装台账。安装、配置或卸载工具、skill、插件后登记记录，或自检当前 agent 自己的组件、核实绝对路径、整理台账格式时使用。每个 agent 只自检所属应用，不扫描其他 agent。
+description: 维护跨 Agent 共用的 AI 工具安装台账。安装、配置或卸载工具、skill、插件后登记记录，采用单一真理源（SSOT）架构管理共用组件，支持多应用联合登记与双重路径自检。
 ---
 
 # AI 工具台账
@@ -9,68 +9,50 @@ description: 维护跨 Agent 共用的 AI 工具安装台账。安装、配置�
 固定脚本：本技能的 `scripts/ledger.mjs`。规则和脚本留在技能目录，新增备份统一放在台账源盘的 `.agent_backups`，不再写入文档目录的 `backups/`。既有旧备份另行获准后迁移。
 详细字段、分类和格式见 [references/schema.md](references/schema.md)，登记前读取。
 
-## 自检边界
+## 单一真理源（SSOT）与自检边界
 
-- 确认当前 agent 所属应用，例如 Codex、Claude、DeepSeekHarness。只检查该应用的已加载能力、自己可访问的技能入口、插件清单和安装注册信息。
-- 不扫描其他 agent 的配置、插件、skill 或应用目录，也不代它们填写台账。其他应用的空工作表留给对应 agent 自行登记。
-- 当前应用内部管理或内部可下载的组件放入“应用名自带”；用户下载或创建、按共用方式管理的 Skill 与插件放入“共用Skill与插件”，不按安装目录认定某个 Agent 专属。其他共用程序放入“共用工具”。“自带”是来源类别，不表示已启用。
-- 用户授权安装的共用工具或原台账已有共用记录，可核实后放“共用工具”；不要顺带盘点整机软件。
-- 市场目录、缓存和已安装启用必须分开。可内部获取的组件只有当前 agent 自己查到并核实来源时才登记，状态写“可内部获取，未确认安装”。
-- 安装路径存在不是可用性测试。禁止凭同名目录、网页介绍或其他应用已有能力写成“已验证可用”。
-- 登记自带能力后再判断是否需要补装同类组件；比较实际用途、当前应用可用状态和具体任务，不按名字直接判定重复。
-- 插件可包含多个 skill；分别登记时在备注写明包含关系。同一应用已有插件提供所需 skill 且满足任务时，不建议再安装功能重复的独立 skill。
+- **单一资产主体**：用户下载或创建、按共用方式管理的 Skill 与插件统一记录于《共用Skill与插件》工作表。严格采用“一物一行”原则，绝对地址指向 Git 源码仓库（`my-agent-skills\skills\<name>`）或 CC Switch 托管源（`.cc-switch\skills\<name>`），不得按不同 Agent 拆成多行。
+- **多应用联合标注**：`apps`（适用应用 / 核实范围）以分号分隔各应用状态（如 `Codex (已同步生效)；Antigravity (已同步生效)`）。各 Agent 仅更新或追加属于自己的核验标记，严禁覆盖其他应用的有效信息。
+- **双重自检核验（Double Verification）**：
+  - 核查 1（源头）：核验单一真理源路径下的 `SKILL.md` frontmatter 身份是否正确。
+  - 核查 2（生效态）：探针检测当前 Agent 专属运行时目录（Antigravity 为 `.gemini\config\skills\<name>`，Codex 为 `.codex\skills\<name>`）是否已同步就绪。
+  - 两者均具备方可标记为“已同步生效”，防止源头存在但运行时缺失的假在线隐患。
+- **应用自带表边界**：当前应用内部私有管理或内置组件放入“应用名自带”工作表（如 `Antigravity自带`、`Codex自带`）。各 Agent 仅维护自己的自带表，不扫描其他 Agent。
+- **共用工具**：整机开发环境、第三方命令行工具等放“共用工具”表，同样遵循单一行原则与多应用适配标注。
 
-- 共用是管理分类，不代表所有 Agent 已安装或可用。CC Switch 可分发的组件可归共用；应用原生管理的插件仍归该应用自带。适用应用及环境限制据实际说明填写，其他应用未检查就写“未核实”。
-- 共用表按实际应用入口分别保存记录。`apps` 必须以当前应用名及中文分号开头（如 `Codex；其他应用未核实`），后续自检与更新仅限该应用的记录；不得覆盖他人的核实信息。
+## 登记与核实流程
 
-## 登记与核实
+1. **沿用会话已有授权**：自检和预览可直接执行；新增、修改、移除台账记录遵守用户的写入确认规则。台账维护不授权安装、卸载、外部发送或发布。
+2. **实际核实路径**：skill 读取真理源 `SKILL.md`，核对 frontmatter 名称及用途；插件读取对应清单或入口。同时探针检测当前应用运行时生效副本。
+3. **中文用途说明**：说明能做什么、适用任务。安装细节、历史路径和测试限制放“安装备注”。版本没有证据时写“未提供”。
+4. **生成请求与预览**：创建请求 JSON，先用固定脚本预览核查，再带 `--apply` 写入。
+5. **集中备份与归档铁律**：写入前自动备份 Excel 至源盘 `.agent_backups/YYYY-MM-DD/AI工具台账-路径标识/唯一备份目录/`，同时生成中文 `备份说明.md` 和 `backup.json`。写入成功后，自动将超过 30 天的已识别旧备份安全移入同盘 `.agent_trash/当天日期/`，绝不物理删除。
+6. **回读校验**：保存后重新加载 Excel，核对名称、用途、分类和记录数，保证数据零丢失。
 
-1. 沿用会话已有授权。自检和预览可直接执行；新增、修改、移除台账记录遵守用户的写入确认规则。台账维护不授权安装、卸载、外部发送或发布。
-2. 实际打开绝对路径。skill 读取 `SKILL.md`，核对 frontmatter 名称及用途；插件读取 `.codex-plugin/plugin.json`、`.claude-plugin/plugin.json` 或本应用真实清单/入口。若是工具虚拟环境，核对实际包或可执行入口，不能只检查环境根目录。
-3. 用中文写“用途说明”，说明能做什么、适用任务。安装来源、验证限制、历史路径和安装细节放“安装备注”。版本没有证据时写“未提供”，不编造。
-4. 创建请求 JSON，先用固定脚本预览，再带 `--apply` 写入。脚本独立核实路径；身份冲突停止写入。新增路径缺失也停止写入，历史记录缺失则保留并标注。
-5. 写入前备份 Excel 至源盘 `.agent_backups/YYYY-MM-DD/AI工具台账-路径标识/唯一备份目录/`，同时生成 `备份说明.md` 和 `backup.json`，说明原路径、时间、Agent、原因及恢复方法。新增记录追加；同步更新核实日期、截至日期、原生表格范围和统一行高。成功登记后，将本台账超过 30 天的已识别备份连同说明移入同盘 `.agent_trash/当天日期/`，不物理删除；预览、只读检查及失败登记不触发归档。
-6. 回读保存的 Excel，核对名称、用途、路径、分类和记录数。首次整理或格式变化需渲染查看；普通登记至少核实内容和表格范围。
-7. 报告改动、路径核实结果和限制。skill 本身也要登记；卸载组件须确认卸载成功后才能删台账记录，删除台账记录不会删除组件。
+## 固定脚本使用
 
-## 固定脚本
-
-使用当前应用已有的 Node 和 `@oai/artifact-tool`，不自动安装依赖、不修改依赖目录、不扫描其他应用。优先由当前应用提供的依赖工具获取运行时；脚本按 `--dependency-root`、`AI_TOOL_LEDGER_DEPENDENCY_ROOT`、Node 正常模块解析的顺序加载依赖，前两者指向包含该包的 node_modules。缺少依赖时报告限制并停止。CC Switch 分发技能不代表目标应用已具备运行依赖。
-
-首次授权登记时，台账不存在可直接用 upsert 创建；单独创建空台账使用 init --apply。预览不创建 Excel；已有台账运行 init 不覆盖。写入全程使用独占锁并备份旧文件，冲突停止；异常遗留锁不得未经核实直接清理。
-
-备份由相对路径 `scripts/backups.mjs` 维护，仅处理带有效元数据且原文件路径匹配的本台账副本；用备份生成时间判断超过 30 天，不使用原 Excel 的修改时间。其他任务、无法识别的目录和原有 `backups/` 不自动搬动。归档失败时明确报告“台账已保存，归档未完成”。当前自动备份支持本地 Windows 盘符；其他系统或网络共享须先明确该卷备份位置，不擅自写入系统根目录。
+使用当前应用已有的 Node 和 `@oai/artifact-tool`，不自动安装依赖，通过 `--dependency-root` 加载运行时。
 
 ```text
-node scripts/ledger.mjs inspect --agent Codex
-node scripts/ledger.mjs check --agent Codex
-node scripts/ledger.mjs init --agent Codex --apply
-node scripts/ledger.mjs upsert --agent Codex --request work/entry.json
-node scripts/ledger.mjs upsert --agent Codex --request work/entry.json --apply
-node scripts/ledger.mjs remove --agent Codex --request work/exact-entry.json --apply
+node scripts/ledger.mjs inspect --agent Antigravity
+node scripts/ledger.mjs check --agent Antigravity
+node scripts/ledger.mjs init --agent Antigravity --apply
+node scripts/ledger.mjs upsert --agent Antigravity --request work/entry.json
+node scripts/ledger.mjs upsert --agent Antigravity --request work/entry.json --apply
+node scripts/ledger.mjs consolidate --agent Antigravity
+node scripts/ledger.mjs consolidate --agent Antigravity --apply
+node scripts/ledger.mjs remove --agent Antigravity --request work/exact-entry.json --apply
 ```
 
-运行时把示例中的 `Codex` 换为当前 agent 的实际应用。请求只包含当前应用记录，禁止用参数冒充其他 agent 自检。
-`--workbook` 可指定测试副本；`--preview-dir` 输出工作目录中的核查截图。
-JSON 使用 UTF-8。临时请求和测试文件放当前任务 `work/`，不散落在文档目录；不要每次重写维护脚本。
-此脚本只能维护约定字段组成的台账。发现额外工作表、公式或手动新增字段时停止，先调整维护逻辑以保留这些内容。
+- `--workbook` 可指定测试副本；`--preview-dir` 输出工作目录中的核查截图。
+- `consolidate` 指令：用于将既有台账中因旧版规则产生的重复记录自动合并为单一真理源标准行，合并历史备注与各应用状态。
 
 ## 跨应用分发与协同规范
 
-### 1. 分发与源头机制
-- 本技能统一由个人技能仓库 `Tianhen666393/my-agent-skills` 集中维护，支持通过各类技能管理工具（如 CC Switch、Magpie 等）或 Git 机制跨应用同步分发。
-- 所有脚本与数据模板均按技能目录相对路径引用；各 Agent 统一遵循 `AGENTS.md` 全局规范按名称调用，不依赖特定应用的私有文件绝对路径。
+### 1. 分发机制与权限
+- 本技能统一由个人技能仓库 `Tianhen666393/my-agent-skills` 维护，通过 CC Switch 或 Git 跨应用分发。
+- 各 Agent 统一遵循 `AGENTS.md` 全局规范按名称调用，不依赖私有绝对路径。
 
-### 2. 日常登记与自检边界（核心铁律）
-- **触发时机**：安装、配置或卸载工具、插件、Skill 后触发登记。
-- **职责边界**：各 Agent 仅自检并登记当前所属应用的组件，严禁冒充其他应用扫描；共用组件按当前应用入口分别核实。
-- **记录匹配**：按应用身份、工作表、类别、名称与绝对路径精确匹配，同路径亦不得覆盖其他应用的既有记录。
-
-### 3. 安全备份与归档机制
-- 每次写操作（`upsert` / `remove`）前，自动对接 `file-backup-cleanup` 规范，在源盘根目录生成规范工作备份：
-  `C:\.agent_backups\YYYY-MM-DD\AI工具台账-源路径标识\唯一备份目录\`
-  必须附带中文 `备份说明.md` 与机器可读的 `backup.json`。
-- 执行成功后，由脚本自动将超过 30 天的该台账旧备份安全转移至同盘 `.agent_trash/当天日期/`，严禁物理硬删除。
-
-### 4. 历史版式操作备忘（非常规维护）
-- 台账目前处于标准化结构（数据行 42 pt，核心信息在前，详细路径与备注后置）。若遇外部损坏需底层重建，方在用户明确授权后使用 `migrate` 或 `redesign` 特殊指令，日常维护严禁调用。
+### 2. 写入与合并机制
+- 《共用Skill与插件》中以 `name` + `kind` 为唯一键，既有记录自动执行 `apps` 追加与备注合并，确保全表整洁不重复。
+- 自带表完全私有隔离。

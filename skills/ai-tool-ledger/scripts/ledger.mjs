@@ -5,10 +5,14 @@ import {createRequire} from 'node:module';
 import os from 'node:os';
 import {execFileSync} from 'node:child_process';
 import {createBackup,archiveExpiredBackups} from './backups.mjs';
+
 const args=process.argv.slice(2), command=args.shift();
 const opt=k=>{const i=args.indexOf('--'+k);return i<0?undefined:args[i+1];};
 const agent=opt('agent');
-if(!agent||/[\\/:*?\[\]]/.test(agent)||agent.length>29||!['inspect','check','init','upsert','remove','migrate','redesign'].includes(command)) throw Error('命令：inspect/check/init/upsert/remove/migrate/redesign --agent 当前应用（有效 Excel 工作表名）');
+if(!agent||/[\\/:*?\[\]]/.test(agent)||agent.length>29||!['inspect','check','init','upsert','remove','migrate','redesign','consolidate'].includes(command)) {
+  throw Error('命令：inspect/check/init/upsert/remove/migrate/redesign/consolidate --agent 当前应用（有效 Excel 工作表名）');
+}
+
 function documentsDirectory(){
  if(process.platform==='win32'){
   const documents=execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',"[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; [Environment]::GetFolderPath('MyDocuments')"],{encoding:'utf8',windowsHide:true}).trim();
@@ -20,26 +24,53 @@ function documentsDirectory(){
  }
  return path.join(os.homedir(),'Documents');
 }
+
+function agentSkillRuntimeDir(agentName){
+ const h=os.homedir();
+ if(agentName==='Antigravity') return path.join(h,'.gemini','config','skills');
+ if(agentName==='Codex') return path.join(h,'.codex','skills');
+ if(agentName==='Claude') return path.join(h,'.claude','skills');
+ if(agentName==='DeepSeekHarness') return path.join(h,'.deepseek','skills');
+ return null;
+}
+
+function mergeApps(existingApps, agentName, statusTag){
+ const parts = String(existingApps || '')
+  .split(/[；;]/)
+  .map(s => s.trim())
+  .filter(Boolean)
+  .filter(s => !s.includes('其他应用未核实') && !s.includes('其他应用未检查'));
+ const newPart = `${agentName} (${statusTag})`;
+ const otherParts = parts.filter(p => !p.startsWith(agentName));
+ return [...otherParts, newPart].join('；');
+}
+
 const file=path.resolve(opt('workbook')||path.join(documentsDirectory(),'AI工具台账','AI工具安装清单.xlsx'));
 const root=opt('dependency-root')||process.env.AI_TOOL_LEDGER_DEPENDENCY_ROOT;
 const require=root?createRequire(path.join(path.resolve(root),'__ledger__.cjs')):createRequire(import.meta.url);
 let Workbook,SpreadsheetFile,FileBlob;
 try{({Workbook,SpreadsheetFile,FileBlob}=require('@oai/artifact-tool'));}catch{throw Error('缺少 @oai/artifact-tool；请使用当前应用已有依赖，通过 --dependency-root 或 AI_TOOL_LEDGER_DEPENDENCY_ROOT 指向 node_modules。不会自动安装或扫描其他应用。');}
+
 const legacyFields=['kind','name','purpose','version','status','path','source','check','checkedAt','notes'];
 const legacyHeaders=['类别','名称','用途说明','版本','当前状态','绝对地址','来源 / 范围','路径核实','核实日期','安装备注'];
 const fields=['name','purpose','apps','status','kind','version','path','source','check','checkedAt','notes'];
 const headers=['名称','用途说明','适用应用 / 核实范围','当前状态','类别','版本','绝对地址','来源 / 范围','路径核实','核实日期','安装备注'];
 const defaults=['共用Skill与插件','Codex自带','Claude自带','DeepSeekHarness自带','共用工具'];
-const allowed=s=>s===agent+'自带'||s==='共用Skill与插件'||s==='共用工具';
-const own=e=>allowed(e.sheet)&&String(e.apps||'').startsWith(agent+'；');
-const norm=p=>path.resolve(p).toLowerCase();
-const date=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const exists=async p=>!!(await fs.stat(p).catch(()=>null));
+
+const isSharedSheet = s => s === '共用Skill与插件' || s === '共用工具';
+const isOwnSheet = s => s === agent + '自带';
+const allowed = s => isOwnSheet(s) || isSharedSheet(s);
+const own = e => allowed(e.sheet);
+const norm = p => path.resolve(p).toLowerCase();
+const date = () => new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const exists = async p => !!(await fs.stat(p).catch(()=>null));
+
 let lock;
 if(args.includes('--apply')){
  await fs.mkdir(path.dirname(file),{recursive:true});
  lock=await fs.open(file+'.lock','wx').catch(error=>{throw Error(error.code==='EEXIST'?'台账正在写入或留有锁文件，请核实写入进程后处理：'+file+'.lock':error.message);});
 }
+
 async function run(){
 try{
 async function verify(e, strict=false){
@@ -51,6 +82,16 @@ async function verify(e, strict=false){
   if(!text){if(strict)throw Error('缺少 SKILL.md：'+e.name);return '目录存在，缺少技能入口';}
   const m=text.match(/^name:\s*["']?([^\r\n"']+)/m);
   if(!m||m[1].trim().toLowerCase()!==e.name.toLowerCase())throw Error('skill 身份冲突：'+e.name+' / '+m?.[1]);
+  if(e.sheet==='共用Skill与插件'){
+   const runtimeBase=agentSkillRuntimeDir(agent);
+   if(runtimeBase){
+    const runtimePath=path.join(runtimeBase,e.name,'SKILL.md');
+    const runtimeExists=await exists(runtimePath);
+    return runtimeExists
+     ? `已核实源码；当前应用(${agent})已同步生效`
+     : `已核实源码；当前应用(${agent})未同步`;
+   }
+  }
   return '已核实 SKILL.md 身份；未执行技能';
  }
  if(e.kind==='插件'){
@@ -81,6 +122,7 @@ async function verify(e, strict=false){
  }
  return (await fs.stat(e.path)).isFile()?'文件存在；未测试功能':'目录存在；具体包和功能需单独核实';
 }
+
 let records=[], names=[...defaults], wb;
 if(await exists(file)){
  if(command==='init'){console.log('台账已存在，保留原文件：'+file);return;}
@@ -119,40 +161,128 @@ if(await exists(file)){
   }
  }
 }
-if(!await exists(file)&&['inspect','check','remove','redesign','migrate'].includes(command))throw Error('台账不存在，请经授权使用 init --apply 或 upsert --apply 创建：'+file);
+
+if(!await exists(file)&&['inspect','check','remove','redesign','migrate','consolidate'].includes(command))throw Error('台账不存在，请经授权使用 init --apply 或 upsert --apply 创建：'+file);
+
 if(command==='check'){
  for(const e of records.filter(own))console.log(JSON.stringify({sheet:e.sheet,name:e.name,path:e.path,result:await verify(e)},null,0));
  return;
 }
-const request=['redesign','init'].includes(command)?{entries:[]}:JSON.parse((await fs.readFile(opt('request'),'utf8')).replace(/^\uFEFF/,''));
-if(!Array.isArray(request.entries))throw Error('请求需要 entries 数组');
-if(command==='migrate'&&!(args.includes('--allow-migration')))throw Error('迁移需要 --allow-migration 及用户授权');
-for(const input of request.entries){
- const e={...input};
- e.apps ||= agent+'；其他应用未核实';
- if(!own(e))throw Error('拒绝跨 Agent 登记：'+e.sheet);
- if(!e.name||!e.kind||!e.purpose?.trim())throw Error('名称、类别和用途说明不能为空');
- if(!names.includes(e.sheet))names.push(e.sheet);
- const keyPath=e.previousPath||e.path;
- const index=records.findIndex(r=>own(r)&&r.sheet===e.sheet&&r.kind===e.kind&&r.name===e.name&&norm(r.path)===norm(keyPath));
- if(index>=0&&!own(records[index]))throw Error('拒绝修改其他 Agent 的记录：'+e.name);
- if(command==='remove'){
-  if(index<0)throw Error('找不到精确记录：'+e.name);
-  if(await exists(e.path))throw Error('组件路径仍存在，不能视为卸载成功');
-  records.splice(index,1);continue;
+
+if(command==='consolidate'){
+ const shared = records.filter(r => r.sheet === '共用Skill与插件');
+ const otherRecords = records.filter(r => r.sheet !== '共用Skill与插件');
+ const groups = new Map();
+ for(const r of shared){
+  const key = (r.name||'').trim().toLowerCase();
+  if(!groups.has(key)) groups.set(key, []);
+  groups.get(key).push(r);
  }
- e.check=await verify(e,!e.historical);e.checkedAt=date();e.version ||= '未提供';
- if(index>=0){const old=records[index];e.notes=[old.notes,e.notes,e.previousPath?'历史地址：'+e.previousPath:''].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('\n');records[index]={...old,...e};}
- else records.push(e);
+ const consolidated = [];
+ const docsDir = documentsDirectory();
+ const mySkillsBase = path.join(docsDir, 'my-agent-skills', 'skills');
+ const ccSkillsBase = path.join(os.homedir(), '.cc-switch', 'skills');
+
+ for(const [key, rows] of groups){
+  const primary = rows[0];
+  const name = primary.name;
+  let canonicalPath = primary.path;
+  const personalCandidate = path.join(mySkillsBase, name);
+  const ccCandidate = path.join(ccSkillsBase, name);
+  if(await exists(path.join(personalCandidate, 'SKILL.md'))){
+   canonicalPath = personalCandidate;
+  } else if(await exists(path.join(ccCandidate, 'SKILL.md'))){
+   canonicalPath = ccCandidate;
+  }
+
+  const appStatuses = [];
+  for(const candidateAgent of ['Codex', 'Antigravity', 'Claude', 'DeepSeekHarness']){
+   const rBase = agentSkillRuntimeDir(candidateAgent);
+   if(rBase && await exists(path.join(rBase, name, 'SKILL.md'))){
+    appStatuses.push(`${candidateAgent} (已同步生效)`);
+   } else if(rows.some(r => String(r.apps||'').includes(candidateAgent))){
+    const matchRow = rows.find(r => String(r.apps||'').includes(candidateAgent));
+    if(matchRow && String(matchRow.apps).includes('未核实')){
+     appStatuses.push(`${candidateAgent} (仅核验共用源，分发未核实)`);
+    }
+   }
+  }
+  if(appStatuses.length === 0){
+   appStatuses.push(agent + ' (已同步生效)');
+  }
+  const mergedAppsStr = appStatuses.join('；');
+  const mergedNotes = rows.map(r => r.notes).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('\n');
+  const isPersonal = canonicalPath.toLowerCase().includes('my-agent-skills');
+  const source = isPersonal ? '个人技能仓库 (Tianhen666393/my-agent-skills)' : '共用';
+
+  const entry = {
+   ...primary,
+   path: canonicalPath,
+   apps: mergedAppsStr,
+   source,
+   status: '已核实源码；多应用已分发同步',
+   notes: mergedNotes,
+   checkedAt: date()
+  };
+  entry.check = await verify(entry);
+  consolidated.push(entry);
+ }
+ records = [...consolidated, ...otherRecords];
+ console.log(JSON.stringify({command,apply:args.includes('--apply'),originalShared:shared.length,consolidatedShared:consolidated.length,total:records.length}));
+ if(!args.includes('--apply')) return;
+} else {
+ const request=['redesign','init'].includes(command)?{entries:[]}:JSON.parse((await fs.readFile(opt('request'),'utf8')).replace(/^\uFEFF/,''));
+ if(!Array.isArray(request.entries))throw Error('请求需要 entries 数组');
+ if(command==='migrate'&&!(args.includes('--allow-migration')))throw Error('迁移需要 --allow-migration 及用户授权');
+ for(const input of request.entries){
+  const e={...input};
+  if(!e.name||!e.kind||!e.purpose?.trim())throw Error('名称、类别和用途说明不能为空');
+  if(!names.includes(e.sheet))names.push(e.sheet);
+  
+  if(e.sheet==='共用Skill与插件'){
+   const index=records.findIndex(r=>r.sheet===e.sheet&&r.kind===e.kind&&r.name.toLowerCase()===e.name.toLowerCase());
+   e.apps = index>=0 ? mergeApps(records[index].apps, agent, '已同步生效') : (e.apps || `${agent} (已同步生效)`);
+   e.check = await verify(e, !e.historical);
+   e.checkedAt = date();
+   e.version ||= '未提供';
+   if(command==='remove'){
+    if(index<0)throw Error('找不到精确记录：'+e.name);
+    if(await exists(e.path))throw Error('组件路径仍存在，不能视为卸载成功');
+    records.splice(index,1);continue;
+   }
+   if(index>=0){
+    const old=records[index];
+    e.notes=[old.notes,e.notes,e.previousPath?'历史地址：'+e.previousPath:''].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('\n');
+    records[index]={...old,...e};
+   } else {
+    records.push(e);
+   }
+  } else {
+   e.apps ||= agent+'；其他应用未核实';
+   if(!own(e))throw Error('拒绝跨 Agent 登记：'+e.sheet);
+   const keyPath=e.previousPath||e.path;
+   const index=records.findIndex(r=>r.sheet===e.sheet&&r.kind===e.kind&&r.name.toLowerCase()===e.name.toLowerCase()&&norm(r.path)===norm(keyPath));
+   if(index>=0&&records[index].sheet===agent+'自带'&&!isOwnSheet(records[index].sheet))throw Error('拒绝修改其他 Agent 的自带记录：'+e.name);
+   if(command==='remove'){
+    if(index<0)throw Error('找不到精确记录：'+e.name);
+    if(await exists(e.path))throw Error('组件路径仍存在，不能视为卸载成功');
+    records.splice(index,1);continue;
+   }
+   e.check=await verify(e,!e.historical);e.checkedAt=date();e.version ||= '未提供';
+   if(index>=0){const old=records[index];e.notes=[old.notes,e.notes,e.previousPath?'历史地址：'+e.previousPath:''].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('\n');records[index]={...old,...e};}
+   else records.push(e);
+  }
+ }
+ console.log(JSON.stringify({command,apply:args.includes('--apply'),total:records.length,sheets:Object.fromEntries(names.map(n=>[n,records.filter(r=>r.sheet===n).length]))}));
+ if(!args.includes('--apply'))return;
 }
-console.log(JSON.stringify({command,apply:args.includes('--apply'),total:records.length,sheets:Object.fromEntries(names.map(n=>[n,records.filter(r=>r.sheet===n).length]))}));
-if(!args.includes('--apply'))return;
+
 wb=Workbook.create();
 for(const [i,name] of names.entries()){
  const s=wb.worksheets.add(name),rows=records.filter(e=>e.sheet===name),end=Math.max(4,rows.length+3);
  s.showGridLines=false;
  s.getRange('A1:D1').merge();s.getRange('A1').values=[[name+'组件清单']];
- s.getRange('A2:D2').merge();s.getRange('A2').values=[['截至 '+date()+'；'+(rows.length?rows.length+' 条；共用表示管理分类，其他应用的安装情况须由对应 Agent 核实':'等待对应 agent 自检登记')]];
+ s.getRange('A2:D2').merge();s.getRange('A2').values=[['截至 '+date()+'；'+(rows.length?rows.length+' 条；共用表示单一真理源资产，各应用同步状态由对应 Agent 联合核验':'等待对应 agent 自检登记')]];
  s.getRange('A3:K3').values=[headers];
  if(rows.length)s.getRange('A4:K'+end).values=rows.map(e=>fields.map(k=>e[k]||''));
  const all=s.getRange('A1:K'+end);all.format.font={name:'Microsoft YaHei',size:11};all.format.verticalAlignment='center';all.format.wrapText=true;all.format.horizontalAlignment='left';
@@ -178,7 +308,7 @@ let count=0;for(const name of names){const v=reopened.worksheets.getItem(name).g
 if(count!==records.length)throw Error('回读记录数不一致，原台账未覆盖');
 await fs.rename(staging,file);
 console.log('保存并回读验证成功：'+file);
-if(['upsert','remove','migrate','redesign'].includes(command)){
+if(['upsert','remove','migrate','redesign','consolidate'].includes(command)){
  try{await archiveExpiredBackups(file);}catch(error){console.error('台账已保存，但过期备份归档未完成：'+error.message);}
 }
 const inspectSidecar=staging+'.inspect.ndjson';
