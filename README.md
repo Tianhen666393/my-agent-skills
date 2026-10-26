@@ -15,6 +15,7 @@
 | **github-open-source-discovery** | [`skills/github-open-source-discovery`](skills/github-open-source-discovery) | 按触发词持续检索、核验并增量收录 GitHub 开源项目，包含“检索与推荐底线”、电赛与电子信息专项跟踪及到期项目定期复核机制。 |
 | **markdown-technical-writing** | [`skills/markdown-technical-writing`](skills/markdown-technical-writing) | Markdown 技术文档规范：规范数值、物理量与常用单位书写，约束 LaTeX 公式排版与显示数学语法，确保 MathJax/KaTeX 跨平台渲染兼容。 |
 | **adversarial-doc-reviewer** | [`skills/adversarial-doc-reviewer`](skills/adversarial-doc-reviewer) | 学术论文与敏感方案红军对抗评审：模拟苛刻审稿人或对立视角挖掘逻辑漏洞与事实防御薄弱点，并在严格保全实验数据与事实前提下进行抗辩强化改写。 |
+| **pc-app-ledger** | [`skills/pc-app-ledger`](skills/pc-app-ledger) | 本机应用安装台账管理：支持 Windows 注册表与自定义盘符智能扫描勘察、按设备（天选 5 Pro、台式机）分文件维护 6 列极简账本、路径有效性巡检与一键私有云端同步。 |
 
 ---
 
