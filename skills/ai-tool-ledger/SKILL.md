@@ -5,7 +5,7 @@ description: 维护跨 Agent 共用的 AI 工具安装台账。安装、配置�
 
 # AI 工具台账
 
-台账默认位于当前用户的真实文档目录下 `AI工具台账/AI工具安装清单.xlsx`。Windows 通过系统 MyDocuments 获取，支持文档目录重定向；Linux 优先使用 XDG 文档目录，其他情况使用用户主目录下的 Documents。`--workbook` 可覆盖此位置；不得写死用户名。
+台账默认位于当前用户的真实文档目录下 `my-pc-ledger/AI工具安装清单.xlsx`（兼容历史 `AI工具台账/` 路径）。Windows 通过系统 MyDocuments 获取，支持文档目录重定向；Linux 优先使用 XDG 文档目录，其他情况使用用户主目录下的 Documents。`--workbook` 可覆盖此位置；不得写死用户名。
 固定脚本：本技能的 `scripts/ledger.mjs`。规则和脚本留在技能目录，新增备份统一放在台账源盘的 `.agent_backups`，不再写入文档目录的 `backups/`。既有旧备份另行获准后迁移。
 详细字段、分类和格式见 [references/schema.md](references/schema.md)，登记前读取。
 

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {createRequire} from 'node:module';
@@ -45,7 +46,14 @@ function mergeApps(existingApps, agentName, statusTag){
  return [...otherParts, newPart].join('；');
 }
 
-const file=path.resolve(opt('workbook')||path.join(documentsDirectory(),'AI工具台账','AI工具安装清单.xlsx'));
+function defaultWorkbookPath(){
+ const docs = documentsDirectory();
+ const preferred = path.join(docs, 'my-pc-ledger', 'AI工具安装清单.xlsx');
+ const legacy = path.join(docs, 'AI工具台账', 'AI工具安装清单.xlsx');
+ return existsSync(preferred) ? preferred : (existsSync(legacy) ? legacy : preferred);
+}
+
+const file=path.resolve(opt('workbook')||defaultWorkbookPath());
 const root=opt('dependency-root')||process.env.AI_TOOL_LEDGER_DEPENDENCY_ROOT;
 const require=root?createRequire(path.join(path.resolve(root),'__ledger__.cjs')):createRequire(import.meta.url);
 let Workbook,SpreadsheetFile,FileBlob;
