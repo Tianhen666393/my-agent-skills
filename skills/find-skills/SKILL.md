@@ -5,6 +5,10 @@ description: 查找、核实、介绍和比较可安装的 Agent Skill。用户�
 
 # Find Skills
 
+> [!NOTE]
+> **上游出处 (Upstream Source)**：本技能源自开源生态 [`vercel-labs/skills`](https://github.com/vercel-labs/skills)（作者：Vercel Labs，生态平台：[skills.sh](https://www.skills.sh/)）。
+> **天痕定制说明**：针对官方原版“只罗列安装命令、缺乏功能详细解读且易凭名字推测用途”的痛点，进行了**中文本土化重构**，前置注入了【用户的检索与安装规则】：强制要求逐个打开详情页核实功能用途后再向用户介绍、动态排行指标必须注明查询日期、严禁未经明确授权擅自安装。
+
 This skill helps you discover and install skills from the open agent skills ecosystem.
 
 ## 用户的检索与安装规则（优先于下方通用示例）
