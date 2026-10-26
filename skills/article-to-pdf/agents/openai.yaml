@@ -1,0 +1,4 @@
+interface:
+  display_name: "Article to PDF"
+  short_description: "把网页教程文章整理成排版干净的 A4 PDF"
+  default_prompt: "Use $article-to-pdf to turn this tutorial URL into a clean A4 PDF."
